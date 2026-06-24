@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東京 → 新川崎 発車案内（横須賀線）</title>
+<style>
+  :root {
+    --line: #0067c0;      /* 横須賀線ブルー */
+    --accent: #38b6ff;    /* 夜でも映えるシアンブルー */
+    --bg: #0b1530;        /* 濃紺の背景 */
+    --bg2: #0f1d44;
+    --card: #16244f;
+    --card-first: #1c3a78;
+    --text: #eaf1ff;
+    --sub: #9fb3d8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, var(--bg2), var(--bg));
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  header { text-align: center; margin-bottom: 18px; }
+  .line-badge {
+    display: inline-block;
+    background: var(--line);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .1em;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  h1 { margin: 0; font-size: 22px; font-weight: 800; }
+  h1 .arrow { color: var(--accent); margin: 0 6px; }
+  .now { margin-top: 6px; font-size: 14px; color: var(--sub); }
+  .daytype-toggle {
+    margin: 4px 0 18px;
+    display: flex;
+    gap: 6px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(120,160,255,.18);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .daytype-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--sub);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .daytype-toggle button.active {
+    background: var(--line);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,103,192,.5);
+  }
+  .main-btn {
+    width: 100%;
+    max-width: 420px;
+    border: none;
+    background: linear-gradient(135deg, #0067c0, #38b6ff);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(56,182,255,.45);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .main-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 3px 10px rgba(56,182,255,.45);
+  }
+  #results {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    border: 1px solid rgba(120,160,255,.12);
+    border-left: 6px solid #3a5390;
+  }
+  .card.first {
+    border-left-color: var(--accent);
+    background: var(--card-first);
+    box-shadow: 0 0 18px rgba(56,182,255,.35);
+  }
+  .card .left { display: flex; flex-direction: column; gap: 3px; }
+  .card .rank { font-size: 12px; color: var(--sub); font-weight: 700; }
+  .card .time { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: .02em; }
+  .card .kind { font-size: 12px; color: var(--sub); }
+  .card .right { text-align: right; }
+  .card .mins { font-size: 14px; color: var(--sub); }
+  .card .mins b {
+    font-size: 34px;
+    color: var(--accent);
+    font-weight: 800;
+    margin: 0 2px;
+    text-shadow: 0 0 12px rgba(56,182,255,.55);
+  }
+  .card.soon .mins b {
+    color: #ffd23f;
+    text-shadow: 0 0 14px rgba(255,210,63,.6);
+  }
+  .empty {
+    text-align: center;
+    color: var(--sub);
+    padding: 24px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  footer {
+    margin-top: 26px;
+    font-size: 11px;
+    color: var(--sub);
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="line-badge">JR横須賀線</div>
+    <h1>東京 <span class="arrow">→</span> 新川崎方面</h1>
+    <div class="now" id="now">--:--</div>
+  </header>
+
+  <div class="daytype-toggle" id="toggle">
+    <button data-type="weekday">平日</button>
+    <button data-type="holiday">土休日</button>
+  </div>
+
+  <button class="main-btn" id="checkBtn">🚃 直近の電車をしらべる</button>
+
+  <div id="results"></div>
+
+  <footer>
+    出典：JR東日本／Yahoo!路線情報（2026年6月時点）<br>
+    新川崎に停まる横須賀線の普通列車のみ表示。<br>
+    成田エクスプレス（特急）と品川止まりは除外しています。
+  </footer>
+
+<script>
+// 行き先コード → 表示名
+const DEST = { 久:"久里浜ゆき", 逗:"逗子ゆき", 船:"大船ゆき", 須:"横須賀ゆき" };
+
+// ===== 時刻表データ（東京駅 横須賀線 下り / 新川崎停車の普通のみ）=====
+// 出典: JR東日本・Yahoo!路線情報（2026年6月）。土曜=休日の共通ダイヤ。
+// 各要素 [発車分, 行き先コード]
+const TIMETABLE = {
+  weekday: {
+    5: [[24,"逗"],[45,"逗"]],
+    6: [[1,"久"],[15,"久"],[32,"久"],[44,"久"],[56,"逗"]],
+    7: [[13,"逗"],[25,"逗"],[34,"逗"],[41,"船"],[46,"久"],[54,"逗"]],
+    8: [[0,"船"],[5,"逗"],[13,"逗"],[19,"船"],[27,"船"],[33,"逗"],[38,"逗"],[47,"船"],[50,"逗"]],
+    9: [[0,"逗"],[12,"久"],[19,"船"],[27,"逗"],[36,"船"],[43,"逗"],[50,"船"]],
+    10:[[4,"逗"],[11,"久"],[25,"逗"],[39,"逗"],[54,"逗"]],
+    11:[[8,"久"],[23,"逗"],[36,"逗"],[53,"逗"]],
+    12:[[8,"久"],[23,"逗"],[36,"逗"],[53,"逗"]],
+    13:[[8,"久"],[23,"逗"],[36,"逗"],[54,"逗"]],
+    14:[[8,"久"],[23,"逗"],[36,"逗"],[54,"須"]],
+    15:[[8,"久"],[23,"久"],[36,"逗"],[54,"逗"]],
+    16:[[3,"久"],[11,"須"],[23,"久"],[33,"逗"],[41,"久"],[54,"久"]],
+    17:[[4,"逗"],[13,"久"],[26,"逗"],[38,"久"],[53,"久"]],
+    18:[[2,"逗"],[10,"久"],[15,"須"],[26,"久"],[38,"久"],[45,"久"],[56,"船"]],
+    19:[[5,"久"],[15,"逗"],[24,"久"],[30,"久"],[37,"逗"],[43,"久"],[55,"須"]],
+    20:[[7,"久"],[17,"逗"],[27,"久"],[38,"久"],[48,"久"]],
+    21:[[3,"逗"],[13,"久"],[23,"久"],[32,"船"],[40,"久"],[56,"久"]],
+    22:[[8,"逗"],[18,"久"],[32,"久"],[48,"久"]],
+    23:[[4,"久"],[22,"船"],[35,"逗"],[50,"船"]]
+  },
+  holiday: {
+    5: [[24,"逗"],[45,"逗"]],
+    6: [[1,"久"],[17,"久"],[32,"久"],[48,"久"],[57,"逗"]],
+    7: [[12,"逗"],[24,"逗"],[36,"逗"],[47,"久"],[54,"船"],[59,"逗"]],
+    8: [[9,"逗"],[15,"船"],[21,"船"],[27,"逗"],[35,"逗"],[47,"逗"],[59,"逗"]],
+    9: [[9,"久"],[18,"船"],[29,"逗"],[39,"逗"],[49,"逗"]],
+    10:[[4,"逗"],[11,"久"],[25,"逗"],[39,"逗"],[54,"逗"]],
+    11:[[8,"久"],[23,"逗"],[36,"逗"],[53,"逗"]],
+    12:[[8,"久"],[23,"逗"],[36,"逗"],[53,"逗"]],
+    13:[[8,"久"],[23,"逗"],[36,"逗"],[54,"逗"]],
+    14:[[8,"久"],[23,"逗"],[36,"逗"],[54,"須"]],
+    15:[[8,"久"],[23,"久"],[36,"逗"],[54,"須"]],
+    16:[[8,"久"],[23,"久"],[32,"逗"],[42,"久"],[54,"逗"]],
+    17:[[3,"久"],[13,"久"],[27,"久"],[37,"久"],[54,"久"]],
+    18:[[4,"逗"],[9,"久"],[16,"須"],[27,"久"],[36,"久"],[45,"久"],[59,"船"]],
+    19:[[8,"久"],[16,"久"],[27,"久"],[37,"船"],[43,"久"],[54,"逗"]],
+    20:[[4,"久"],[18,"須"],[29,"久"],[39,"逗"],[48,"久"]],
+    21:[[0,"久"],[10,"久"],[21,"久"],[35,"逗"],[40,"久"],[56,"久"]],
+    22:[[8,"逗"],[18,"久"],[32,"久"],[48,"久"]],
+    23:[[4,"久"],[22,"船"],[35,"逗"],[50,"船"]]
+  }
+};
+
+let currentType = null;
+
+function buildList(type) {
+  const tt = TIMETABLE[type];
+  const list = [];
+  for (const h in tt) {
+    const hour = parseInt(h, 10);
+    const baseMin = (hour === 0 ? 24 : hour) * 60;
+    for (const [m, d] of tt[h]) {
+      list.push({ totalMin: baseMin + m, hour: hour, min: m, dest: d });
+    }
+  }
+  list.sort((a, b) => a.totalMin - b.totalMin);
+  return list;
+}
+
+function autoType() {
+  const d = new Date().getDay();
+  return (d === 0 || d === 6) ? 'holiday' : 'weekday';
+}
+
+function setType(type) {
+  currentType = type;
+  document.querySelectorAll('#toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function updateNow() {
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('now').textContent =
+    `${now.getMonth()+1}/${now.getDate()}(${days[now.getDay()]}) ${pad(now.getHours())}:${pad(now.getMinutes())} 現在`;
+}
+
+function check() {
+  updateNow();
+  const now = new Date();
+  let nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds()/60;
+  if (now.getHours() < 2) nowMin += 24 * 60;
+
+  const list = buildList(currentType);
+  const upcoming = list.filter(t => t.totalMin > nowMin).slice(0, 3);
+
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  if (upcoming.length === 0) {
+    results.innerHTML = '<div class="empty">この時間の電車はもうありません🌙<br>始発をお待ちください。</div>';
+    return;
+  }
+
+  const ranks = ['つぎの電車', '2本目', '3本目'];
+  upcoming.forEach((t, i) => {
+    const diff = Math.max(0, Math.ceil(t.totalMin - nowMin));
+    const card = document.createElement('div');
+    card.className = 'card' + (i === 0 ? ' first' : '') + (diff <= 3 ? ' soon' : '');
+    card.innerHTML = `
+      <div class="left">
+        <div class="rank">${ranks[i]}</div>
+        <div class="time">${pad(t.hour)}:${pad(t.min)}</div>
+        <div class="kind">各停（横須賀線） ${DEST[t.dest] || ''}</div>
+      </div>
+      <div class="right">
+        <div class="mins">あと <b>${diff}</b> 分</div>
+      </div>`;
+    results.appendChild(card);
+  });
+}
+
+// ===== 初期化 =====
+setType(autoType());
+updateNow();
+setInterval(updateNow, 1000 * 20);
+
+document.getElementById('checkBtn').addEventListener('click', check);
+document.querySelectorAll('#toggle button').forEach(b => {
+  b.addEventListener('click', () => { setType(b.dataset.type); check(); });
+});
+</script>
+</body>
+</html>
