@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="横浜to新川崎">
+<title>横浜to新川崎</title>
+<style>
+  :root {
+    --yokosuka: #0067c0;  /* 横須賀線ブルー */
+    --shonan: #e8730d;    /* 湘南新宿オレンジ */
+    --accent: #38b6ff;
+    --bg: #0b1530;
+    --bg2: #0f1d44;
+    --card: #16244f;
+    --card-first: #1c3a78;
+    --text: #eaf1ff;
+    --sub: #9fb3d8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, var(--bg2), var(--bg));
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  header { text-align: center; margin-bottom: 18px; }
+  .line-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--yokosuka), var(--accent));
+    color: #fff;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: .06em;
+    padding: 5px 16px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  h1 { margin: 0; font-size: 22px; font-weight: 800; }
+  h1 .arrow { color: var(--accent); margin: 0 6px; }
+  .now { margin-top: 6px; font-size: 14px; color: var(--sub); }
+  .legend { margin-top: 8px; font-size: 12px; color: var(--sub); }
+  .legend .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin:0 3px 0 10px; vertical-align: middle; }
+  .legend .dot.y { background: var(--yokosuka); }
+  .legend .dot.s { background: var(--shonan); }
+  .daytype-toggle {
+    margin: 14px 0 18px;
+    display: flex;
+    gap: 6px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(120,160,255,.18);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .daytype-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--sub);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .daytype-toggle button.active {
+    background: var(--yokosuka);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,103,192,.5);
+  }
+  .main-btn {
+    width: 100%;
+    max-width: 420px;
+    border: none;
+    background: linear-gradient(135deg, #0067c0, #38b6ff);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(56,182,255,.45);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .main-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 3px 10px rgba(56,182,255,.45);
+  }
+  #results {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    border: 1px solid rgba(120,160,255,.12);
+    border-left: 6px solid #3a5390;
+  }
+  .card.line-y { border-left-color: var(--yokosuka); }
+  .card.line-s { border-left-color: var(--shonan); }
+  .card.first {
+    background: var(--card-first);
+    box-shadow: 0 0 18px rgba(56,182,255,.35);
+  }
+  .card .left { display: flex; flex-direction: column; gap: 4px; }
+  .card .rank { font-size: 12px; color: var(--sub); font-weight: 700; }
+  .card .time { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: .02em; }
+  .card .kind { font-size: 12px; }
+  .card .ltag {
+    display: inline-block;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .card .ltag.y { background: var(--yokosuka); }
+  .card .ltag.s { background: var(--shonan); }
+  .card .right { text-align: right; }
+  .card .mins { font-size: 14px; color: var(--sub); }
+  .card .mins b {
+    font-size: 34px;
+    color: var(--accent);
+    font-weight: 800;
+    margin: 0 2px;
+    text-shadow: 0 0 12px rgba(56,182,255,.55);
+  }
+  .card.soon .mins b {
+    color: #ffd23f;
+    text-shadow: 0 0 14px rgba(255,210,63,.6);
+  }
+  .empty {
+    text-align: center;
+    color: var(--sub);
+    padding: 24px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  footer {
+    margin-top: 26px;
+    font-size: 11px;
+    color: var(--sub);
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="line-badge">横浜to新川崎</div>
+    <h1>横浜 <span class="arrow">→</span> 新川崎</h1>
+    <div class="now" id="now">--:--</div>
+    <div class="legend">
+      <span class="dot y"></span>横須賀線
+      <span class="dot s"></span>湘南新宿ライン
+    </div>
+  </header>
+
+  <div class="daytype-toggle" id="toggle">
+    <button data-type="weekday">平日</button>
+    <button data-type="holiday">土休日</button>
+  </div>
+
+  <button class="main-btn" id="checkBtn">🚃 直近の電車をしらべる</button>
+
+  <div id="results"></div>
+
+  <footer>
+    出典：Yahoo!路線情報（2026年6月時点）<br>
+    新川崎に停まる電車のみ表示（横須賀線の普通＋湘南新宿の宇都宮線系統）。<br>
+    成田エクスプレス・高崎線系統（新川崎通過）は除外しています。
+  </footer>
+
+<script>
+// ===== 時刻表データ（横浜駅 → 新川崎方面）=====
+// 出典: Yahoo!路線情報（2026年6月）。土曜=休日の共通ダイヤとして扱う。
+// y=横須賀線(上り/東京方面 普通)、s=湘南新宿ライン(北行 宇都宮線系統のみ・新川崎停車)。
+const TIMETABLE = {
+  weekday: {
+    y: {
+      5:[22,39], 6:[3,18,33,45,52], 7:[1,7,13,21,29,37,44,48,53,58],
+      8:[6,13,20,30,38,43,52], 9:[1,9,16,22,33,40,46,54],
+      10:[4,15,23,42,54], 11:[10,24,42,54], 12:[10,24,42,54],
+      13:[10,24,42,54], 14:[10,24,42,54], 15:[11,24,41,54],
+      16:[6,21,38,45,54], 17:[8,15,23,37,45,54], 18:[6,11,22,37,46,55],
+      19:[9,16,24,38,45,54], 20:[8,19,30,40,59], 21:[6,14,21,44,54],
+      22:[7,18,33,46], 23:[7,30,45], 0:[5]
+    },
+    s: {
+      6:[48], 7:[24,41], 8:[3,18,35], 9:[3,19,57], 10:[10,35],
+      11:[3,33], 12:[3,34], 13:[3,33], 14:[3,33], 15:[3,33],
+      16:[2,32], 17:[4,35], 18:[1,33], 19:[2,34], 20:[3,48],
+      21:[40], 22:[28]
+    }
+  },
+  holiday: {
+    y: {
+      5:[22,39], 6:[3,18,33,45,52], 7:[1,13,24,33,40,49],
+      8:[0,13,21,31,40,43], 9:[1,10,16,22,33,38,47,54],
+      10:[5,15,23,42,54], 11:[9,24,42,54], 12:[10,24,42,54],
+      13:[10,24,42,54], 14:[10,24,42,54], 15:[11,24,41,54],
+      16:[6,21,37,44,55], 17:[9,15,23,40,53], 18:[7,12,21,37,47,57],
+      19:[10,15,24,37,44,55], 20:[9,20,27,38,53,58], 21:[5,14,21,34,43,56],
+      22:[11,24,33,45], 23:[7,30,45], 0:[5]
+    },
+    s: {
+      5:[48], 6:[48], 7:[30], 8:[5,35,50], 9:[19], 10:[0,11,34],
+      11:[3,33], 12:[3,34], 13:[3,33], 14:[3,33], 15:[3,33],
+      16:[2,33], 17:[2,35], 18:[1,33], 19:[3,34], 20:[17,47],
+      21:[27], 22:[6]
+    }
+  }
+};
+
+const LINE = { y: "横須賀線", s: "湘南新宿ライン" };
+
+let currentType = null;
+
+function buildList(type) {
+  const data = TIMETABLE[type];
+  const list = [];
+  for (const lineKey of ["y", "s"]) {
+    const tt = data[lineKey];
+    for (const h in tt) {
+      const hour = parseInt(h, 10);
+      const baseMin = (hour === 0 ? 24 : hour) * 60;
+      for (const m of tt[h]) {
+        list.push({ totalMin: baseMin + m, hour: hour, min: m, line: lineKey });
+      }
+    }
+  }
+  list.sort((a, b) => a.totalMin - b.totalMin);
+  return list;
+}
+
+function autoType() {
+  const d = new Date().getDay();
+  return (d === 0 || d === 6) ? 'holiday' : 'weekday';
+}
+
+function setType(type) {
+  currentType = type;
+  document.querySelectorAll('#toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function updateNow() {
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('now').textContent =
+    `${now.getMonth()+1}/${now.getDate()}(${days[now.getDay()]}) ${pad(now.getHours())}:${pad(now.getMinutes())} 現在`;
+}
+
+function check() {
+  updateNow();
+  const now = new Date();
+  let nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds()/60;
+  if (now.getHours() < 2) nowMin += 24 * 60;
+
+  const list = buildList(currentType);
+  const upcoming = list.filter(t => t.totalMin > nowMin).slice(0, 3);
+
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  if (upcoming.length === 0) {
+    results.innerHTML = '<div class="empty">この時間の電車はもうありません🌙<br>始発をお待ちください。</div>';
+    return;
+  }
+
+  const ranks = ['つぎの電車', '2本目', '3本目'];
+  upcoming.forEach((t, i) => {
+    const diff = Math.max(0, Math.ceil(t.totalMin - nowMin));
+    const card = document.createElement('div');
+    card.className = 'card line-' + t.line + (i === 0 ? ' first' : '') + (diff <= 3 ? ' soon' : '');
+    card.innerHTML = `
+      <div class="left">
+        <div class="rank">${ranks[i]}</div>
+        <div class="time">${pad(t.hour)}:${pad(t.min)}</div>
+        <div class="kind"><span class="ltag ${t.line}">${LINE[t.line]}</span> 新川崎に停車</div>
+      </div>
+      <div class="right">
+        <div class="mins">あと <b>${diff}</b> 分</div>
+      </div>`;
+    results.appendChild(card);
+  });
+}
+
+// ===== 初期化 =====
+setType(autoType());
+updateNow();
+setInterval(updateNow, 1000 * 20);
+
+document.getElementById('checkBtn').addEventListener('click', check);
+document.querySelectorAll('#toggle button').forEach(b => {
+  b.addEventListener('click', () => { setType(b.dataset.type); check(); });
+});
+</script>
+</body>
+</html>
